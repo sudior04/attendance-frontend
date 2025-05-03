@@ -45,7 +45,7 @@ const Attendance = () => {
     const fetchAttendances = async () => {
         try {
             setLoading(true);
-            const data = await apiRequest<Attendance[]>('/api/attendances');
+            const data = await apiRequest<Attendance[]>('/attendances');
             setAttendances(data);
         } catch (err: any) {
             console.error('Lỗi khi tải dữ liệu điểm danh:', err);

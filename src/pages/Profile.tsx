@@ -13,7 +13,6 @@ interface UserProfile {
     citizenId?: string; // CCCD
     role: string;
     phoneNumber?: string;
-    address?: string;
     avatar?: string;
 }
 
@@ -115,8 +114,7 @@ const Profile = () => {
                 // Email không thay đổi (đã disabled trên UI)
                 birth: editedUser.birth,
                 citizenId: editedUser.citizenId,
-                phoneNumber: editedUser.phoneNumber,
-                address: editedUser.address
+                phoneNumber: editedUser.phoneNumber
             };
 
             console.log('Dữ liệu gửi đi:', updateUserDTO);
@@ -300,19 +298,6 @@ const Profile = () => {
                                                     <p className="text-xs text-gray-500 mt-1">CCCD phải gồm đúng 12 chữ số</p>
                                                 </div>
 
-                                                <div className="mb-4">
-                                                    <label className="block text-gray-700 text-sm font-bold mb-2">
-                                                        Địa chỉ
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        name="address"
-                                                        value={editedUser?.address || ''}
-                                                        onChange={handleChange}
-                                                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                                                    />
-                                                </div>
-
                                                 <div className="flex gap-3 mt-6">
                                                     <button
                                                         onClick={handleSave}
@@ -357,11 +342,6 @@ const Profile = () => {
                                                 <div>
                                                     <h3 className="text-sm font-medium text-gray-500">CCCD</h3>
                                                     <p className="mt-1 text-gray-900">{user?.citizenId || '—'}</p>
-                                                </div>
-
-                                                <div>
-                                                    <h3 className="text-sm font-medium text-gray-500">Địa chỉ</h3>
-                                                    <p className="mt-1 text-gray-900">{user?.address || '—'}</p>
                                                 </div>
                                             </div>
                                         )}

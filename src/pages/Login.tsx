@@ -89,10 +89,6 @@ const Login = () => {
                         {loading ? 'Đang xử lý...' : 'ĐĂNG NHẬP'}
                     </button>
                 </form>
-
-                <div className="mt-6 text-sm">
-                    <p>Chưa có tài khoản? <a href="#" className="text-blue-600 hover:text-blue-800">Đăng ký ngay</a></p>
-                </div>
             </div>
         </div>
     );

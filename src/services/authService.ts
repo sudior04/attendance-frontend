@@ -20,10 +20,11 @@ export interface LoginResponse {
     refreshToken: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+// Export API_URL để các service khác có thể sử dụng
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
-// Cookie options
-const TOKEN_COOKIE_NAME = 'auth_token';
+// Cookie options - Cập nhật tên cookie cho phù hợp với response từ server
+const TOKEN_COOKIE_NAME = 'access_token'; // Thay đổi tên cookie từ 'auth_token' thành 'access_token'
 const REFRESH_TOKEN_COOKIE_NAME = 'refresh_token';
 const USER_INFO_STORAGE_KEY = 'user_info';
 
@@ -35,6 +36,7 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(credentials),
+            credentials: 'include', // Quan trọng: cho phép gửi và nhận cookies
         });
 
         if (!response.ok) {
@@ -44,49 +46,51 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
 
         const data: LoginResponse = await response.json();
 
-        // Calculate expiration in days (convert seconds to days)
-        const expirationInDays = data.expiresIn / (60 * 60 * 24);
-
-        // Save auth token to cookie
-        Cookies.set(TOKEN_COOKIE_NAME, data.authentication.token, {
-            expires: expirationInDays,
-            secure: true,
-            sameSite: 'strict'
-        });
-
-        // Save refresh token to cookie
-        Cookies.set(REFRESH_TOKEN_COOKIE_NAME, data.refreshToken, {
-            expires: 30, // 30 days for refresh token
-            secure: true,
-            sameSite: 'strict'
-        });
-
-        // Save user info to localStorage
+        // Không cần thiết lập cookies vì server đã thiết lập HttpOnly cookie
+        // Nhưng chúng ta vẫn lưu thông tin người dùng vào localStorage
         localStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify({
             id: data.authentication.id,
             name: data.authentication.name,
             email: data.authentication.email,
-            role: data.authentication.role
+            role: data.authentication.role,
+            token: data.authentication.token // Lưu token vào localStorage để sử dụng khi cần
         }));
+
+        // Lưu token vào localStorage như một phương án dự phòng
+        localStorage.setItem(TOKEN_COOKIE_NAME, data.authentication.token);
+        if (data.refreshToken) {
+            localStorage.setItem(REFRESH_TOKEN_COOKIE_NAME, data.refreshToken);
+        }
 
         return data;
     } catch (error) {
         console.error('Lỗi khi gọi API:', error);
-        throw new Error('Không thể kết nối đến server. Vui lòng thử lại sau.');
+        throw new Error('Tài khoản hoặc mật khẩu không đúng.');
     }
 };
 
 export const logout = () => {
-    // Clear cookies
-    Cookies.remove(TOKEN_COOKIE_NAME);
-    Cookies.remove(REFRESH_TOKEN_COOKIE_NAME);
+    // Gọi API để đăng xuất từ server (nếu có)
+    fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include', // Quan trọng để gửi cookie hiện tại
+    }).catch(error => {
+        console.error('Lỗi khi đăng xuất:', error);
+    });
 
     // Clear localStorage
     localStorage.removeItem(USER_INFO_STORAGE_KEY);
+    localStorage.removeItem(TOKEN_COOKIE_NAME);
+    localStorage.removeItem(REFRESH_TOKEN_COOKIE_NAME);
 };
 
 export const getAuthToken = (): string | null => {
-    return Cookies.get(TOKEN_COOKIE_NAME) || null;
+    // Không thể truy cập cookie HttpOnly từ JavaScript
+    // Nên chúng ta sử dụng token đã lưu trong localStorage
+    const userInfo = getUserFromStorage();
+    if (userInfo && userInfo.token) return userInfo.token;
+
+    return localStorage.getItem(TOKEN_COOKIE_NAME);
 };
 
 export const getRefreshToken = (): string | null => {
@@ -135,7 +139,8 @@ export const apiRequest = async <T>(
 
         const response = await fetch(apiUrl, {
             ...options,
-            headers
+            headers,
+            credentials: 'include', // Thêm tùy chọn này để gửi cookies trong yêu cầu
         });
 
         console.log(`Kết quả API call: ${response.status} ${response.statusText}`);
