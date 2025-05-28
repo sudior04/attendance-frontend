@@ -14,9 +14,7 @@ const Login = () => {
         if (isAuthenticated()) {
             navigate('/home');
         }
-    }, [navigate]);
-
-    const handleLogin = async (e: React.FormEvent) => {
+    }, [navigate]); const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setLoading(true);
@@ -25,9 +23,13 @@ const Login = () => {
 
         try {
             await login(credentials);
+
+            // Nếu đăng nhập thành công (đã kiểm tra ADMIN trong authService)
             navigate('/home'); // Chuyển hướng đến trang Home
         } catch (err: any) {
+            // Hiển thị lỗi từ service (bao gồm thông báo về quyền ADMIN)
             setError(err.message);
+            console.error('Lỗi đăng nhập:', err);
         } finally {
             setLoading(false);
         }

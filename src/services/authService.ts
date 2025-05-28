@@ -46,6 +46,12 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
 
         const data: LoginResponse = await response.json();
 
+        // Kiểm tra role, chỉ cho phép ADMIN đăng nhập
+        if (data.authentication.role !== 'ADMIN') {
+            // Nếu không phải ADMIN, không lưu thông tin và ném lỗi
+            throw new Error('Bạn không có quyền truy cập. Chỉ ADMIN mới được phép đăng nhập.');
+        }
+
         // Không cần thiết lập cookies vì server đã thiết lập HttpOnly cookie
         // Nhưng chúng ta vẫn lưu thông tin người dùng vào localStorage
         localStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify({
@@ -65,7 +71,11 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
         return data;
     } catch (error) {
         console.error('Lỗi khi gọi API:', error);
-        throw new Error('Tài khoản hoặc mật khẩu không đúng.');
+        if (error instanceof Error) {
+            throw error;
+        } else {
+            throw new Error('Tài khoản hoặc mật khẩu không đúng.');
+        }
     }
 };
 
@@ -114,6 +124,26 @@ export const isAuthenticated = (): boolean => {
     return !!getAuthToken();
 };
 
+export const isAdmin = (): boolean => {
+    const user = getUserFromStorage();
+    return !!user && user.role === 'ADMIN';
+};
+
+// New helper function to check token expiration and handle redirection
+export const handleTokenExpiration = (response: Response): boolean => {
+    if (response.status === 401) {
+        console.error('Token hết hạn hoặc không hợp lệ');
+        logout();
+        window.location.href = '/login';
+
+        // Dispatch a custom event that token has expired
+        window.dispatchEvent(new CustomEvent('tokenExpired'));
+
+        return true;
+    }
+    return false;
+};
+
 // Function to make authenticated API requests
 export const apiRequest = async <T>(
     url: string,
@@ -142,15 +172,13 @@ export const apiRequest = async <T>(
             headers,
             credentials: 'include', // Thêm tùy chọn này để gửi cookies trong yêu cầu
         });
-
         console.log(`Kết quả API call: ${response.status} ${response.statusText}`);
 
         if (!response.ok) {
             // Handle 401 Unauthorized - possible token expired
-            if (response.status === 401) {
-                console.error('Token hết hạn hoặc không hợp lệ');
-                logout();
-                window.location.href = '/login';
+            if (handleTokenExpiration(response)) {
+                // Dispatch a custom event that token has expired
+                window.dispatchEvent(new CustomEvent('tokenExpired'));
                 throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
             }
 
@@ -165,4 +193,56 @@ export const apiRequest = async <T>(
         console.error('Lỗi khi gọi API:', error);
         throw error;
     }
+};
+
+// Add a token validation utility
+export const validateToken = async (): Promise<boolean> => {
+    const token = getAuthToken();
+
+    if (!token) {
+        return false;
+    }
+
+    try {
+        // Make a lightweight API call to validate the token
+        const response = await fetch(`${API_URL}/user/validate-token`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+            credentials: 'include',
+        });
+
+        if (!response.ok) {
+            // If unauthorized, clear auth data and return false
+            if (response.status === 401) {
+                logout();
+                return false;
+            }
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error validating token:', error);
+        return false;
+    }
+};
+
+// Function to setup automatic token validation interval
+export const setupTokenValidation = (interval = 60000): number => {
+    // Check token every minute (or as specified)
+    const intervalId = window.setInterval(async () => {
+        const isValid = await validateToken();
+        if (!isValid && window.location.pathname !== '/login') {
+            console.log('Token expired, redirecting to login');
+            window.location.href = '/login';
+        }
+    }, interval);
+
+    return intervalId;
+};
+
+// Function to clear token validation interval
+export const clearTokenValidation = (intervalId: number): void => {
+    window.clearInterval(intervalId);
 };

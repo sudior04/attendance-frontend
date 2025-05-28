@@ -195,14 +195,7 @@ const Profile = () => {
                                 <h1 className="text-2xl font-bold">Hồ sơ cá nhân</h1>
                                 <p className="opacity-90">Xem và quản lý thông tin cá nhân của bạn</p>
 
-                                {!isEditing && (
-                                    <button
-                                        onClick={handleEdit}
-                                        className="absolute top-6 right-6 bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors"
-                                    >
-                                        Chỉnh sửa
-                                    </button>
-                                )}
+
                             </div>
 
                             <div className="p-6">
