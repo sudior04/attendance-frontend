@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { getExams, Exam, updateExam, deleteExam, createExam } from '../services/examService';
 import { useNavigate } from 'react-router-dom';
-import { apiRequest, isAuthenticated, getUserFromStorage } from '../services/authService';
+import { isAuthenticated } from '../services/authService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import ExamFormModal from '../components/ExamFormModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 
 
 const ExamList = () => {
@@ -192,49 +194,7 @@ const ExamList = () => {
     const handleCloseDeleteModal = () => {
         setIsDeleteModalOpen(false);
         setSelectedExam(null);
-    }; const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-
-        // Xử lý các trường lồng nhau như schedule.name, schedule.startTime, v.v.
-        if (name.includes('.')) {
-            // Xử lý các trường lồng nhau như schedule.name, room.building, v.v.
-            const [parentField, childField] = name.split('.');
-
-            if (parentField === 'schedule') {
-                setEditFormData(prev => ({
-                    ...prev,
-                    schedule: {
-                        ...(prev.schedule || {
-                            scheduleId: '',
-                            startTime: '',
-                            endTime: '',
-                            name: ''
-                        }),
-                        [childField]: value
-                    }
-                }));
-            } else if (parentField === 'room') {
-                setEditFormData(prev => ({
-                    ...prev,
-                    room: {
-                        ...(prev.room || {
-                            roomId: '',
-                            name: '',
-                            building: ''
-                        }),
-                        [childField]: value
-                    }
-                }));
-            }
-        } else {
-            // Xử lý các trường thông thường
-            setEditFormData(prev => ({
-                ...prev,
-                [name]: value
-            }));
-        }
-    }; const handleEditFormSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    }; const handleEditFormSubmit = async (examData: Partial<Exam>) => {
         if (!selectedExam) return;
 
         try {
@@ -242,19 +202,19 @@ const ExamList = () => {
             setError(null);
 
             // Ensure valid scheduleId and roomId from original exam
-            const schedule = editFormData.schedule ? {
-                ...editFormData.schedule,
-                scheduleId: editFormData.schedule.scheduleId || selectedExam.schedule.scheduleId
+            const schedule = examData.schedule ? {
+                ...examData.schedule,
+                scheduleId: examData.schedule.scheduleId || selectedExam.schedule?.scheduleId || ''
             } : selectedExam.schedule;
 
-            const room = editFormData.room ? {
-                ...editFormData.room,
-                roomId: editFormData.room.roomId || selectedExam.room.roomId
+            const room = examData.room ? {
+                ...examData.room,
+                roomId: examData.room.roomId || selectedExam.room?.roomId || ''
             } : selectedExam.room;
 
             // Prepare data for API call
             const updateData: Partial<Exam> = {
-                ...editFormData,
+                ...examData,
                 schedule,
                 room
             };
@@ -329,77 +289,22 @@ const ExamList = () => {
                 building: ''
             }
         });
-    }; const handleAddInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-
-        if (name.includes('.')) {
-            // Xử lý các trường lồng nhau như schedule.name, room.building, v.v.
-            const [parentField, childField] = name.split('.');
-
-            if (parentField === 'schedule') {
-                setNewExamData(prev => ({
-                    ...prev,
-                    schedule: {
-                        ...(prev.schedule || {
-                            scheduleId: '',
-                            startTime: '',
-                            endTime: '',
-                            name: ''
-                        }),
-                        [childField]: value
-                    }
-                }));
-            } else if (parentField === 'room') {
-                setNewExamData(prev => ({
-                    ...prev,
-                    room: {
-                        ...(prev.room || {
-                            roomId: '',
-                            name: '',
-                            building: ''
-                        }),
-                        [childField]: value
-                    }
-                }));
-            }
-        } else {
-            // Xử lý các trường thông thường
-            setNewExamData(prev => ({
-                ...prev,
-                [name]: value
-            }));
-        }
     };
 
-    const handleAddFormSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
+    const handleAddFormSubmit = async (examData: Partial<Exam>) => {
         try {
             setIsSubmitting(true);
             setError(null);
 
             // Ensure we have all required fields
-            if (!newExamData.name || !newExamData.subject || !newExamData.semester) {
+            if (!examData.name || !examData.subject || !examData.semester) {
                 setError('Vui lòng điền đầy đủ thông tin cần thiết');
                 setIsSubmitting(false);
                 return;
             }
 
-            // Generate IDs for schedule and room if they're missing
-            const examToCreate = {
-                ...newExamData,
-                schedule: {
-                    ...newExamData.schedule,
-                    scheduleId: newExamData.schedule?.scheduleId
-                },
-                room: {
-                    ...newExamData.room,
-                    roomId: newExamData.room?.roomId
-                }
-            } as Exam;
-
             // Create the new exam using the API
-            const createdExam = await createExam(examToCreate);
+            const createdExam = await createExam(examData as Exam);
 
             // Add the new exam to the list
             setExams(prevExams => [...prevExams, createdExam]);
@@ -567,362 +472,36 @@ const ExamList = () => {
                         </>
                     )}
                 </div>
-            </main>
-            <Footer />
+            </main>            <Footer />
 
-            {/* Edit Exam Modal */}
-            {isEditModalOpen && selectedExam && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl mx-4">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-gray-800">Chỉnh sửa kỳ thi</h2>
-                            <button onClick={handleCloseEditModal} className="text-gray-500 hover:text-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleEditFormSubmit}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Tên kỳ thi</label>
-                                    <input
-                                        type="text"
-                                        id="name"
-                                        name="name" value={editFormData.name || ''}
-                                        onChange={handleEditInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">Môn thi</label>
-                                    <input
-                                        type="text"
-                                        id="subject"
-                                        name="subject" value={editFormData.subject || ''}
-                                        onChange={handleEditInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="semester" className="block text-sm font-medium text-gray-700 mb-1">Kì học</label>
-                                    <input
-                                        type="text"
-                                        id="semester"
-                                        name="semester" value={editFormData.semester || ''}
-                                        onChange={handleEditInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">Ngày thi</label>
-                                    <input
-                                        type="date"
-                                        id="date"
-                                        name="date" value={editFormData.date || ''}
-                                        onChange={handleEditInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="border-t border-gray-200 mt-4 pt-4">
-                                <h3 className="text-lg font-medium mb-2">Thông tin ca thi</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label htmlFor="editScheduleName" className="block text-sm font-medium text-gray-700 mb-1">Tên ca thi</label>
-                                        <input
-                                            type="text"
-                                            id="editScheduleName"
-                                            name="schedule.name"
-                                            value={editFormData.schedule?.name || ''}
-                                            onChange={handleEditInputChange}
-                                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="editStartTime" className="block text-sm font-medium text-gray-700 mb-1">Thời gian bắt đầu</label>
-                                        <input
-                                            type="time"
-                                            id="editStartTime"
-                                            name="schedule.startTime"
-                                            value={editFormData.schedule?.startTime || ''}
-                                            onChange={handleEditInputChange}
-                                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="editEndTime" className="block text-sm font-medium text-gray-700 mb-1">Thời gian kết thúc</label>
-                                        <input
-                                            type="time"
-                                            id="editEndTime"
-                                            name="schedule.endTime"
-                                            value={editFormData.schedule?.endTime || ''}
-                                            onChange={handleEditInputChange}
-                                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="border-t border-gray-200 mt-4 pt-4">
-                                <h3 className="text-lg font-medium mb-2">Thông tin phòng thi</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label htmlFor="editRoomName" className="block text-sm font-medium text-gray-700 mb-1">Tên phòng</label>
-                                        <input
-                                            type="text"
-                                            id="editRoomName"
-                                            name="room.name"
-                                            value={editFormData.room?.name || ''}
-                                            onChange={handleEditInputChange}
-                                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="editBuilding" className="block text-sm font-medium text-gray-700 mb-1">Tòa nhà</label>
-                                        <input
-                                            type="text"
-                                            id="editBuilding"
-                                            name="room.building"
-                                            value={editFormData.room?.building || ''}
-                                            onChange={handleEditInputChange}
-                                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-6 flex justify-end space-x-3">
-                                <button
-                                    type="button"
-                                    onClick={handleCloseEditModal}
-                                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
-                                    disabled={isSubmitting}
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Delete Exam Modal */}
-            {isDeleteModalOpen && selectedExam && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-gray-800">Xác nhận xóa kỳ thi</h2>
-                            <button onClick={handleCloseDeleteModal} className="text-gray-500 hover:text-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div className="mb-6">
-                            <p className="text-gray-700 mb-4">Bạn có chắc chắn muốn xóa kỳ thi sau không?</p>
-                            <div className="bg-gray-50 p-3 rounded border border-gray-200">
-                                <p className="font-medium">{selectedExam.name}</p>
-                                <p className="text-sm text-gray-600">Môn thi: {selectedExam.subject}</p>
-                                <p className="text-sm text-gray-600">Kì học: {selectedExam.semester}</p>
-                                <p className="text-sm text-gray-600">Ngày thi: {formatDate(selectedExam.date)}</p>
-                            </div>
-                            <p className="text-red-600 text-sm mt-4">Hành động này không thể hoàn tác!</p>
-                        </div>
-
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                type="button"
-                                onClick={handleCloseDeleteModal}
-                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
-                                disabled={isSubmitting}
-                            >
-                                Hủy
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleDeleteConfirm}
-                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? 'Đang xóa...' : 'Xóa kỳ thi'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}            {/* Add Exam Modal */}
-            {isAddModalOpen && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-gray-800">Thêm kỳ thi mới</h2>
-                            <button onClick={handleCloseAddModal} className="text-gray-500 hover:text-gray-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {error && (
-                            <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
-                                {error}
-                            </div>
-                        )}
-
-                        <form onSubmit={handleAddFormSubmit}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Tên kỳ thi <span className="text-red-500">*</span></label>
-                                    <input
-                                        type="text"
-                                        id="name"
-                                        name="name"
-                                        value={newExamData.name || ''}
-                                        onChange={handleAddInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">Môn thi <span className="text-red-500">*</span></label>
-                                    <input
-                                        type="text"
-                                        id="subject"
-                                        name="subject"
-                                        value={newExamData.subject || ''}
-                                        onChange={handleAddInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="semester" className="block text-sm font-medium text-gray-700 mb-1">Kì học <span className="text-red-500">*</span></label>
-                                    <input
-                                        type="text"
-                                        id="semester"
-                                        name="semester"
-                                        value={newExamData.semester || ''}
-                                        onChange={handleAddInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">Ngày thi <span className="text-red-500">*</span></label>
-                                    <input
-                                        type="date"
-                                        id="date"
-                                        name="date"
-                                        value={newExamData.date || ''}
-                                        onChange={handleAddInputChange}
-                                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="border-t border-gray-200 mt-4 pt-4">
-                                <h3 className="text-lg font-medium mb-2">Thông tin ca thi</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label htmlFor="scheduleName" className="block text-sm font-medium text-gray-700 mb-1">Tên ca thi</label>                                        <input
-                                            type="text"
-                                            id="scheduleName"
-                                            name="schedule.name"
-                                            value={newExamData.schedule?.name || ''}
-                                            onChange={handleAddInputChange}
-                                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">Thời gian bắt đầu</label>                                        <input
-                                            type="time"
-                                            id="startTime"
-                                            name="schedule.startTime"
-                                            value={newExamData.schedule?.startTime || ''}
-                                            onChange={handleAddInputChange}
-                                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">Thời gian kết thúc</label>                                        <input
-                                            type="time"
-                                            id="endTime"
-                                            name="schedule.endTime"
-                                            value={newExamData.schedule?.endTime || ''}
-                                            onChange={handleAddInputChange}
-                                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="border-t border-gray-200 mt-4 pt-4">
-                                <h3 className="text-lg font-medium mb-2">Thông tin phòng thi</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label htmlFor="roomName" className="block text-sm font-medium text-gray-700 mb-1">Tên phòng</label>                                        <input
-                                            type="text"
-                                            id="roomName"
-                                            name="room.name"
-                                            value={newExamData.room?.name || ''}
-                                            onChange={handleAddInputChange}
-                                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="building" className="block text-sm font-medium text-gray-700 mb-1">Tòa nhà</label>                                        <input
-                                            type="text"
-                                            id="building"
-                                            name="room.building"
-                                            value={newExamData.room?.building || ''}
-                                            onChange={handleAddInputChange}
-                                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-6 flex justify-end space-x-3">
-                                <button
-                                    type="button"
-                                    onClick={handleCloseAddModal}
-                                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
-                                    disabled={isSubmitting}
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? 'Đang lưu...' : 'Thêm kỳ thi'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            {/* Edit Exam Modal using reusable component */}
+            <ExamFormModal
+                isOpen={isEditModalOpen}
+                onClose={handleCloseEditModal}
+                onSubmit={handleEditFormSubmit}
+                initialData={editFormData}
+                title="Chỉnh sửa kỳ thi"
+                submitButtonText="Lưu thay đổi"
+                isSubmitting={isSubmitting}
+                error={error}
+            />            {/* Delete Exam Modal using reusable component */}
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={handleCloseDeleteModal}
+                onConfirm={handleDeleteConfirm}
+                exam={selectedExam}
+                isSubmitting={isSubmitting}
+            />            {/* Add Exam Modal using reusable component */}
+            <ExamFormModal
+                isOpen={isAddModalOpen}
+                onClose={handleCloseAddModal}
+                onSubmit={handleAddFormSubmit}
+                initialData={newExamData}
+                title="Thêm kỳ thi mới"
+                submitButtonText="Thêm kỳ thi"
+                isSubmitting={isSubmitting}
+                error={error}
+            />
         </div>
     );
 };
