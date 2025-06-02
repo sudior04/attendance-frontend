@@ -3,8 +3,10 @@ import { useEffect } from 'react';
 import UserList from './pages/UserList'
 import Login from './pages/Login'
 import ExamList from './pages/ExamList'
+import ExamDetail from './pages/ExamDetail'
 import Profile from './pages/Profile'
 import Attendance from './pages/Attendance'
+import AttendanceDetail from './pages/AttendanceDetail'
 import PrivateRoute from './components/PrivateRoute'
 import Home from './pages/Home'
 import { getAuthToken, isAuthenticated } from './services/authService'
@@ -36,12 +38,13 @@ const AppContent = () => {
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
 
-      {/* Các route được bảo vệ - cần đăng nhập */}
-      <Route element={<PrivateRoute />}>
+      {/* Các route được bảo vệ - cần đăng nhập */}      <Route element={<PrivateRoute />}>
         <Route path='/home' element={<Home />} />
         <Route path="/users" element={<UserList />} />
         <Route path="/exams" element={<ExamList />} />
+        <Route path="/exam-detail/:examId" element={<ExamDetail />} />
         <Route path="/attendance" element={<Attendance />} />
+        <Route path="/attendance/exam/:examId" element={<AttendanceDetail />} />
         <Route path="/profile" element={<Profile />} />
       </Route>
 

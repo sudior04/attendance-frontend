@@ -10,10 +10,8 @@ interface UserProfile {
     email: string;
     password?: string; // Không hiển thị trên UI nhưng có thể cần cho API
     birth?: string; // LocalDate sẽ được chuyển thành string trong JSON
-    citizenId?: string; // CCCD
+    citizenId: string; // CCCD
     role: string;
-    phoneNumber?: string;
-    avatar?: string;
 }
 
 const Profile = () => {
@@ -114,7 +112,6 @@ const Profile = () => {
                 // Email không thay đổi (đã disabled trên UI)
                 birth: editedUser.birth,
                 citizenId: editedUser.citizenId,
-                phoneNumber: editedUser.phoneNumber
             };
 
             console.log('Dữ liệu gửi đi:', updateUserDTO);
@@ -251,19 +248,6 @@ const Profile = () => {
 
                                                 <div className="mb-4">
                                                     <label className="block text-gray-700 text-sm font-bold mb-2">
-                                                        Số điện thoại
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        name="phoneNumber"
-                                                        value={editedUser?.phoneNumber || ''}
-                                                        onChange={handleChange}
-                                                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                                                    />
-                                                </div>
-
-                                                <div className="mb-4">
-                                                    <label className="block text-gray-700 text-sm font-bold mb-2">
                                                         Ngày sinh
                                                     </label>
                                                     <input
@@ -318,11 +302,6 @@ const Profile = () => {
                                                 <div>
                                                     <h3 className="text-sm font-medium text-gray-500">Email</h3>
                                                     <p className="mt-1 text-gray-900">{user?.email || '—'}</p>
-                                                </div>
-
-                                                <div>
-                                                    <h3 className="text-sm font-medium text-gray-500">Số điện thoại</h3>
-                                                    <p className="mt-1 text-gray-900">{user?.phoneNumber || '—'}</p>
                                                 </div>
 
                                                 <div>

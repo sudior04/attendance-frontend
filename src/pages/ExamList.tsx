@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getExams, Exam, updateExam, deleteExam, createExam } from '../services/examService';
+import { getExams, Exam, updateExam, deleteExam, createExam, CreateExamDTO } from '../services/examService';
 import { useNavigate } from 'react-router-dom';
 import { isAuthenticated } from '../services/authService';
 import Header from '../components/Header';
@@ -20,22 +20,13 @@ const ExamList = () => {
     const [editFormData, setEditFormData] = useState<Partial<Exam>>({});
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
-    const [newExamData, setNewExamData] = useState<Partial<Exam>>({
+    const [newExamData, setNewExamData] = useState<Partial<CreateExamDTO>>({
         name: '',
         date: new Date().toISOString().split('T')[0],
         subject: '',
         semester: '',
-        schedule: {
-            scheduleId: '',
-            startTime: '',
-            endTime: '',
-            name: ''
-        },
-        room: {
-            roomId: '',
-            name: '',
-            building: ''
-        }
+        scheduleId: 0,
+        roomId: '',
     });
     const navigate = useNavigate(); useEffect(() => {
 
@@ -189,12 +180,16 @@ const ExamList = () => {
         setIsEditModalOpen(false);
         setSelectedExam(null);
         setEditFormData({});
-    };
-
-    const handleCloseDeleteModal = () => {
+    }; const handleCloseDeleteModal = () => {
         setIsDeleteModalOpen(false);
         setSelectedExam(null);
-    }; const handleEditFormSubmit = async (examData: Partial<Exam>) => {
+    };
+
+    const handleViewExamDetail = (examId: string) => {
+        navigate(`/exam-detail/${examId}`);
+    };
+
+    const handleEditFormSubmit = async (examData: Partial<Exam>) => {
         if (!selectedExam) return;
 
         try {
@@ -277,17 +272,8 @@ const ExamList = () => {
             date: new Date().toISOString().split('T')[0],
             subject: '',
             semester: '',
-            schedule: {
-                scheduleId: '',
-                startTime: '',
-                endTime: '',
-                name: ''
-            },
-            room: {
-                roomId: '',
-                name: '',
-                building: ''
-            }
+            scheduleId: 0,
+            roomId: '',
         });
     };
 
@@ -296,24 +282,33 @@ const ExamList = () => {
             setIsSubmitting(true);
             setError(null);
 
-            // Ensure we have all required fields
-            if (!examData.name || !examData.subject || !examData.semester) {
+            // Kiểm tra thông tin bắt buộc
+            if (!examData.name || !examData.subject || !examData.semester || !examData.schedule?.scheduleId || !examData.room?.roomId) {
                 setError('Vui lòng điền đầy đủ thông tin cần thiết');
                 setIsSubmitting(false);
                 return;
             }
 
-            // Create the new exam using the API
-            const createdExam = await createExam(examData as Exam);
+            // Chuyển đổi dữ liệu sang DTO phù hợp API
+            const examDTO: CreateExamDTO = {
+                name: examData.name,
+                date: examData.date,
+                status: examData.status,
+                subject: examData.subject,
+                semester: examData.semester,
+                scheduleId: Number(examData.schedule.scheduleId), // Đảm bảo là number
+                roomId: examData.room.roomId,
+            };
 
-            // Add the new exam to the list
+            // Gọi API tạo mới kỳ thi
+            const createdExam = await createExam(examDTO);
+
+            // Thêm kỳ thi mới vào danh sách
             setExams(prevExams => [...prevExams, createdExam]);
 
-            // Close the modal
+            // Đóng modal
             handleCloseAddModal();
 
-            // Show success message
-            alert('Thêm kỳ thi thành công!');
             console.log('Exam added successfully');
         } catch (err: any) {
             setError(err.message || 'Không thể thêm kỳ thi. Vui lòng thử lại sau.');
@@ -322,6 +317,7 @@ const ExamList = () => {
             setIsSubmitting(false);
         }
     };
+
 
 
     return (
@@ -438,9 +434,19 @@ const ExamList = () => {
                                                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(determineExamStatus(exam))}`}>
                                                             {getStatusLabel(determineExamStatus(exam))}
                                                         </span>
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                                                    </td>                                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                         <div className="flex space-x-2">
+                                                            <button
+                                                                className="text-green-600 hover:text-green-900 flex items-center"
+                                                                title="Xem danh sách sinh viên"
+                                                                onClick={() => handleViewExamDetail(exam.examId)}
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                </svg>
+                                                                Xem
+                                                            </button>
                                                             <button
                                                                 className="text-indigo-600 hover:text-indigo-900 flex items-center"
                                                                 title="Sửa"

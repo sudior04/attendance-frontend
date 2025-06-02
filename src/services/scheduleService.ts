@@ -2,7 +2,7 @@ import { API_URL } from "./authService";
 import { getAuthToken, handleTokenExpiration } from "./authService";
 
 export interface Schedule {
-    scheduleId: string;
+    scheduleId: string | number;
     startTime: string;
     endTime: string;
     name: string;

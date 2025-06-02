@@ -13,6 +13,16 @@ export interface Exam {
     room: Room;
 }
 
+export interface CreateExamDTO {
+    name: string;
+    date?: string;
+    status?: string;
+    subject: string;
+    semester: string;
+    scheduleId: Number;
+    roomId: string;
+}
+
 export const getExams = async (): Promise<Exam[]> => {
     try {
         const token = getAuthToken();
@@ -84,7 +94,7 @@ export const getExamById = async (id: string): Promise<Exam> => {
     }
 };
 
-export const createExam = async (exam: Omit<Exam, 'id'>): Promise<Exam> => {
+export const createExam = async (exam: CreateExamDTO): Promise<Exam> => {
     try {
         const token = getAuthToken();
         if (!token) {
@@ -103,13 +113,12 @@ export const createExam = async (exam: Omit<Exam, 'id'>): Promise<Exam> => {
         });
 
         if (!response.ok) {
-            // Handle token expiration (401 Unauthorized)
             if (response.status === 401) {
                 window.location.href = '/login';
                 throw new Error('Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.');
             }
-
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
@@ -119,6 +128,7 @@ export const createExam = async (exam: Omit<Exam, 'id'>): Promise<Exam> => {
         throw error;
     }
 };
+
 
 export const updateExam = async (id: string, exam: Partial<Exam>): Promise<Exam> => {
     try {

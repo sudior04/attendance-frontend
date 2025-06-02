@@ -6,7 +6,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 
-const ExamList = () => {
+const Attendance = () => {
     const [exams, setExams] = useState<Exam[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -371,53 +371,6 @@ const ExamList = () => {
         }
     };
 
-    const handleAddFormSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        try {
-            setIsSubmitting(true);
-            setError(null);
-
-            // Ensure we have all required fields
-            if (!newExamData.name || !newExamData.subject || !newExamData.semester) {
-                setError('Vui lòng điền đầy đủ thông tin cần thiết');
-                setIsSubmitting(false);
-                return;
-            }
-
-            // Generate IDs for schedule and room if they're missing
-            const examToCreate = {
-                ...newExamData,
-                schedule: {
-                    ...newExamData.schedule,
-                    scheduleId: newExamData.schedule?.scheduleId
-                },
-                room: {
-                    ...newExamData.room,
-                    roomId: newExamData.room?.roomId
-                }
-            } as Exam;
-
-            // Create the new exam using the API
-            const createdExam = await createExam(examToCreate);
-
-            // Add the new exam to the list
-            setExams(prevExams => [...prevExams, createdExam]);
-
-            // Close the modal
-            handleCloseAddModal();
-
-            // Show success message
-            alert('Thêm kỳ thi thành công!');
-            console.log('Exam added successfully');
-        } catch (err: any) {
-            setError(err.message || 'Không thể thêm kỳ thi. Vui lòng thử lại sau.');
-            console.error('Error adding exam:', err);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
 
     return (
         <div className="flex flex-col min-h-screen w-full bg-gray-50">
@@ -521,11 +474,25 @@ const ExamList = () => {
                                                                 </>
                                                             ) : 'N/A'}
                                                         </div>
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap">
+                                                    </td>                                                    <td className="px-4 py-4 whitespace-nowrap">
                                                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(determineExamStatus(exam))}`}>
                                                             {getStatusLabel(determineExamStatus(exam))}
                                                         </span>
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                                                        <div className="flex space-x-2">
+                                                            <button
+                                                                className="text-blue-600 hover:text-blue-900 flex items-center"
+                                                                title="Xem chi tiết điểm danh"
+                                                                onClick={() => navigate(`/attendance/exam/${exam.examId}`)}
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                </svg>
+                                                                Xem chi tiết
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))
@@ -542,4 +509,4 @@ const ExamList = () => {
     );
 };
 
-export default ExamList;
+export default Attendance;

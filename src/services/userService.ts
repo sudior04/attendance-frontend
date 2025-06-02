@@ -2,7 +2,7 @@ import { API_URL, getAuthToken, handleTokenExpiration } from './authService';
 
 
 export interface User {
-    id: string;
+    userId: string;
     name: string;
     email: string;
     birth?: string;
@@ -108,4 +108,48 @@ export const getAllUsers = async (): Promise<User[]> => {
         throw error;
     }
 
+};
+
+/**
+ * Tìm kiếm người dùng theo CMND/CCCD
+ * @param citizenId CCCD của người dùng cần tìm
+ * @returns Người dùng tìm thấy hoặc null nếu không tìm thấy
+ */
+export const searchUserByCitizenId = async (citizenId: string): Promise<User | null> => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
+        }
+
+        const response = await fetch(`${API_URL}/user/citizen-id/${citizenId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            credentials: 'include',
+        });
+
+        if (!response.ok) {
+            // Handle token expiration
+            if (handleTokenExpiration(response)) {
+                throw new Error('Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.');
+            }
+
+            if (response.status === 404) {
+                return null;
+            }
+
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Lỗi ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        // Vì API trả về List<UserDTO>, cần lấy phần tử đầu tiên nếu có
+        return result;
+    } catch (error) {
+        console.error('Lỗi khi tìm kiếm người dùng theo CCCD:', error);
+        throw error;
+    }
 };

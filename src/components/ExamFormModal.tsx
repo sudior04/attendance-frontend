@@ -184,7 +184,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
             return;
         }
 
-        const selectedSchedule = schedules.find(s => s.scheduleId === selectedScheduleId);
+        const selectedSchedule = schedules.find(s => s.scheduleId.toString() === (selectedScheduleId));
 
         if (selectedSchedule) {
             console.log('Found matching schedule:', selectedSchedule);
@@ -245,7 +245,16 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
             alert('Vui lòng chọn phòng thi');
             return;
         }
-        onSubmit(formData);
+
+        // Create a deep copy of formData to avoid modifying the original state
+        const dataToSubmit = JSON.parse(JSON.stringify(formData));
+
+        // Convert scheduleId to number before submitting if it's a string
+        if (dataToSubmit.schedule?.scheduleId) {
+            dataToSubmit.schedule.scheduleId = Number(dataToSubmit.schedule.scheduleId);
+        }
+
+        onSubmit(dataToSubmit);
     };
 
     if (!isOpen) {
@@ -317,8 +326,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
                             </div>
 
                             <div>
-                                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">Ngày thi <span className="text-red-500">*</span></label>
-                                <input
+                                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">Ngày thi <span className="text-red-500">*</span></label>                                <input
                                     type="date"
                                     id="date"
                                     name="date"
@@ -326,6 +334,12 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
                                     onChange={handleInputChange}
                                     className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                                     required
+                                    style={{
+                                        colorScheme: "light",
+                                        color: "black",
+                                        background: "white url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"15\" viewBox=\"0 0 24 24\"><path fill=\"black\" d=\"M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z\"/></svg>') no-repeat right 8px center",
+                                        backgroundSize: "16px"
+                                    }}
                                 />
                             </div>
                         </div>
@@ -337,7 +351,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
                                     <label htmlFor="scheduleId" className="block text-sm font-medium text-gray-700 mb-1">Ca thi <span className="text-red-500">*</span></label>                                <select
                                         id="scheduleId"
                                         name="scheduleId"
-                                        value={formData.schedule?.scheduleId || ''}
+                                        value={formData.schedule?.scheduleId.toString() || ''}
                                         onChange={handleScheduleChange}
                                         className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                                         required

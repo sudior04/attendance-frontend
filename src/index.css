@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './styles/global.css';
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -13,6 +15,29 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Style for date input to make the arrow black */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0);
+  cursor: pointer;
+  opacity: 1;
+  /* Ensure visibility */
+}
+
+/* For Firefox */
+input[type="date"]::-moz-calendar-picker-indicator {
+  filter: invert(0);
+  cursor: pointer;
+  opacity: 1;
+  /* Ensure visibility */
+}
+
+/* For Edge/IE */
+input[type="date"]::-ms-clear,
+input[type="date"]::-ms-reveal {
+  filter: invert(0);
+  cursor: pointer;
 }
 
 html,

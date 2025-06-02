@@ -110,7 +110,7 @@ const UserList = () => {
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {filteredUsers.map(user => (
-                                            <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                                            <tr key={user.userId} className="hover:bg-gray-50 transition-colors">
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.name}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.birth || 'N/A'}</td>
