@@ -407,7 +407,8 @@ const ExamList = () => {
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap">
                                                         <div className="text-sm text-gray-900">{exam.subject}</div>
-                                                    </td>                                                    <td className="px-4 py-4 whitespace-nowrap">
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap">
                                                         <div className="text-sm text-gray-900">{exam.semester}</div>
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap">
@@ -421,7 +422,8 @@ const ExamList = () => {
                                                                 </>
                                                             ) : 'N/A'}
                                                         </div>
-                                                    </td>                                                    <td className="px-4 py-4 whitespace-nowrap">
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap">
                                                         <div className="text-sm text-gray-900">
                                                             {exam.room ? (
                                                                 <>
@@ -434,7 +436,8 @@ const ExamList = () => {
                                                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(determineExamStatus(exam))}`}>
                                                             {getStatusLabel(determineExamStatus(exam))}
                                                         </span>
-                                                    </td>                                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                         <div className="flex space-x-2">
                                                             <button
                                                                 className="text-green-600 hover:text-green-900 flex items-center"
